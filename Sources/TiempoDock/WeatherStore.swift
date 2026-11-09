@@ -45,9 +45,14 @@ final class WeatherStore: NSObject, ObservableObject {
         guard !started else { return }
         started = true
         if locations.isEmpty {
-            locations = [SavedLocation.currentPlaceholder()]
-            selectedID = locations[0].id
-            saveLocations()
+            if CLLocationManager.locationServicesEnabled() {
+                locations = [SavedLocation.currentPlaceholder()]
+                selectedID = locations[0].id
+                saveLocations()
+            } else {
+                errorMessage = "Este Mac no tiene la localización activada. Añade tu ciudad en Ajustes › Ubicaciones."
+                DispatchQueue.main.async { (NSApp.delegate as? AppDelegate)?.showSettings() }
+            }
         }
         scheduleTimer()
         NSWorkspace.shared.notificationCenter.addObserver(
