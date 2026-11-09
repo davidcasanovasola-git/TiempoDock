@@ -25,7 +25,7 @@ Los datos vienen de [Open-Meteo](https://open-meteo.com) (licencia CC BY 4.0). E
 Necesitas macOS 13 o posterior y las herramientas de línea de comandos de Xcode (`xcode-select --install`). No hace falta Xcode completo.
 
 ```bash
-git clone https://github.com/<tu-usuario>/TiempoDock.git
+git clone https://github.com/davidcasanovasola-git/TiempoDock.git
 cd TiempoDock
 ./scripts/install.sh
 ```
