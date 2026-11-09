@@ -15,6 +15,18 @@ rm -rf build
 mkdir -p "$OUT/Contents/MacOS" "$OUT/Contents/Resources"
 cp "$BIN" "$OUT/Contents/MacOS/$APP_NAME"
 cp Resources/Info.plist "$OUT/Contents/Info.plist"
+mkdir -p "$OUT/Contents/Library/LaunchAgents"
+cp Resources/io.github.tiempodock.agent.plist "$OUT/Contents/Library/LaunchAgents/"
+
+# Versión: la variable VERSION, o si no la última etiqueta vX.Y.Z del repositorio.
+if [ -z "${VERSION:-}" ]; then
+    VERSION="$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null | sed 's/^v//' || true)"
+fi
+if [ -n "${VERSION:-}" ]; then
+    echo "→ Versión $VERSION"
+    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$OUT/Contents/Info.plist"
+    /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $VERSION" "$OUT/Contents/Info.plist"
+fi
 
 echo "→ Generando icono…"
 "$BIN" --export-iconset build/AppIcon.iconset

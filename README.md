@@ -16,7 +16,8 @@ El icono muestra el estado del cielo y la temperatura y se actualiza solo. Con u
 - **Unidades**: °C o °F; km/h, m/s, mph o nudos.
 - **Barra de menús opcional** con la temperatura.
 - **Actualización automática** cada 5, 10, 15, 30 o 60 minutos y al despertar el Mac.
-- **Abrir al iniciar sesión**.
+- **Abrir al iniciar sesión**, sin ventana (solo el icono del Dock).
+- **Actualizaciones automáticas** desde GitHub Releases.
 
 Los datos vienen de [Open-Meteo](https://open-meteo.com) (licencia CC BY 4.0). Es gratuito y no necesita cuenta ni clave de API.
 
@@ -32,15 +33,23 @@ cd TiempoDock
 
 El script compila la app, la copia a `/Applications/TiempoDock.app` y la abre. La primera vez macOS te pedirá permiso para usar tu ubicación. Si no se lo das, añade una ciudad en **Ajustes › Ubicaciones**.
 
-Para que se abra sola al encender el Mac: **Ajustes › General › Abrir TiempoDock al iniciar sesión**. Conviene además fijarla en el Dock: clic derecho en el icono › Opciones › Mantener en el Dock.
-
-Para actualizar a una versión nueva:
-
-```bash
-git pull && ./scripts/install.sh
-```
+Para que se abra sola al encender el Mac: **Ajustes › General › Abrir TiempoDock al iniciar sesión**. Al iniciar sesión se abre **sin ventana**: solo aparece el icono del Dock. Conviene además fijarla en el Dock: clic derecho en el icono › Opciones › Mantener en el Dock.
 
 Solo compilar, sin instalar: `./scripts/build.sh`, que deja la app en `build/TiempoDock.app`.
+
+## Actualizaciones automáticas
+
+La app comprueba [GitHub Releases](../../releases) al abrirse y cada 6 horas. Si hay una versión nueva, la descarga, comprueba que es TiempoDock con una firma válida, se reemplaza en `/Applications` y se vuelve a abrir. Si estaba sin ventana, sigue sin ventana. Se puede desactivar o forzar en **Ajustes › General › Actualizaciones**, o desde el menú **TiempoDock › Buscar actualizaciones…**.
+
+Para publicar una versión nueva:
+
+```bash
+./scripts/release.sh 1.1.0
+```
+
+Eso crea y sube la etiqueta `v1.1.0`. El workflow `.github/workflows/release.yml` compila la app en GitHub Actions y la publica como `TiempoDock.zip` en un release nuevo.
+
+> El repositorio tiene que ser **público** para que la app pueda leer los releases sin credenciales.
 
 ## Estructura
 
@@ -55,6 +64,8 @@ Solo compilar, sin instalar: `./scripts/build.sh`, que deja la app en `build/Tie
 | `SettingsView.swift` | Ajustes |
 | `Menus.swift` | Menú del Dock, barra de menús y menú principal |
 | `WeatherCode.swift` | Códigos de tiempo WMO → texto e icono |
+| `Updater.swift` | Actualizaciones automáticas desde GitHub Releases |
+| `LoginItem.swift` | Arranque al iniciar sesión (sin ventana) |
 
 ## Notas
 

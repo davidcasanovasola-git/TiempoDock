@@ -10,9 +10,11 @@ enum Prefs {
     static let showMenuBar = "showMenuBar"
     static let locations = "locations"
     static let selectedLocationID = "selectedLocationID"
+    static let autoUpdate = "autoUpdate"
 
     static func register() {
         UserDefaults.standard.register(defaults: [
+            autoUpdate: true,
             dockMetric: DockMetric.temperature.rawValue,
             temperatureUnit: TemperatureUnit.celsius.rawValue,
             windUnit: WindUnit.kmh.rawValue,

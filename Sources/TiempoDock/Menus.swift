@@ -23,6 +23,10 @@ final class MenuActions: NSObject {
         }
     }
 
+    @objc func checkForUpdates() {
+        Task { await Updater.shared.check(userInitiated: true) }
+    }
+
     @objc func quit() {
         NSApp.terminate(nil)
     }
@@ -115,6 +119,9 @@ enum MenuBuilder {
         let appItem = NSMenuItem()
         let appMenu = NSMenu()
         appMenu.addItem(withTitle: "Acerca de TiempoDock", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        let updates = NSMenuItem(title: "Buscar actualizaciones…", action: #selector(MenuActions.checkForUpdates), keyEquivalent: "")
+        updates.target = MenuActions.shared
+        appMenu.addItem(updates)
         appMenu.addItem(.separator())
         let settings = NSMenuItem(title: "Ajustes…", action: #selector(MenuActions.openSettings), keyEquivalent: ",")
         settings.target = MenuActions.shared

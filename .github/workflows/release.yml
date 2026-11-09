@@ -1,0 +1,31 @@
+# Publica una versión nueva al subir una etiqueta vX.Y.Z:
+#   git tag v1.1.0 && git push origin v1.1.0   (o ./scripts/release.sh 1.1.0)
+# Las apps instaladas la detectan y se actualizan solas.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compilar
+        run: VERSION="${GITHUB_REF_NAME#v}" ./scripts/build.sh
+
+      - name: Empaquetar
+        run: cd build && ditto -c -k --keepParent TiempoDock.app TiempoDock.zip
+
+      - name: Publicar en GitHub Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" build/TiempoDock.zip \
+            --title "TiempoDock ${GITHUB_REF_NAME#v}" \
+            --generate-notes

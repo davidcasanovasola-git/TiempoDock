@@ -7,25 +7,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let statusItem = StatusItemController()
     private var forecastWindow: NSWindow?
     private var settingsWindow: NSWindow?
-    private var launchedAsLoginItem = false
-
-    func applicationWillFinishLaunching(_ notification: Notification) {
-        if let event = NSAppleEventManager.shared().currentAppleEvent,
-           event.eventID == kAEOpenApplication,
-           event.paramDescriptor(forKeyword: keyAEPropData)?.enumCodeValue == keyAELaunchedAsLogInItem {
-            launchedAsLoginItem = true
-        }
-    }
+    /// Al iniciar sesión (o tras actualizarse en segundo plano) la app arranca con
+    /// `--background`: solo aparece el icono del Dock, sin abrir ventanas.
+    private let launchedInBackground = CommandLine.arguments.contains("--background")
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Prefs.register()
+        LoginItem.migrateIfNeeded()
         NSApp.mainMenu = MenuBuilder.mainMenu()
         store.onChange = { [weak self] in self?.refreshUI() }
         refreshUI()
         store.start()
-        if !launchedAsLoginItem {
+        Updater.shared.start()
+        if !launchedInBackground {
             showForecast()
         }
+    }
+
+    /// Hay alguna ventana de la app abierta en pantalla.
+    var hasVisibleWindows: Bool {
+        [forecastWindow, settingsWindow].contains { $0?.isVisible == true }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -66,7 +67,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 title: "Ajustes de TiempoDock",
                 autosave: "SettingsWindow",
                 content: SettingsView().environmentObject(store),
-                size: NSSize(width: 520, height: 500)
+                size: NSSize(width: 540, height: 600)
             )
             settingsWindow?.styleMask.remove(.resizable)
         }

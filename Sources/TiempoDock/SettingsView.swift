@@ -12,7 +12,7 @@ struct SettingsView: View {
                 .tabItem { Label("General", systemImage: "gearshape") }
         }
         .padding(16)
-        .frame(width: 520, height: 500)
+        .frame(width: 540, height: 600)
     }
 }
 
@@ -186,7 +186,10 @@ private struct DisplaySettings: View {
 private struct GeneralSettings: View {
     @EnvironmentObject var store: WeatherStore
     @AppStorage(Prefs.refreshMinutes) private var refreshMinutes = 15
-    @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
+    @AppStorage(Prefs.autoUpdate) private var autoUpdate = true
+    @ObservedObject private var updater = Updater.shared
+    @State private var launchAtLogin = LoginItem.isEnabled
+    @State private var needsApproval = LoginItem.needsApproval
     @State private var loginError: String?
 
     var body: some View {
@@ -205,8 +208,35 @@ private struct GeneralSettings: View {
             }
             Section("Inicio") {
                 Toggle("Abrir TiempoDock al iniciar sesión", isOn: $launchAtLogin)
+                Text("Al iniciar sesión se abre sin ventana: solo aparece el icono del Dock.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if needsApproval {
+                    HStack {
+                        Text("macOS necesita que lo apruebes en Elementos de inicio.")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                        Button("Abrir Ajustes del Sistema") { LoginItem.openSystemSettings() }
+                    }
+                }
                 if let loginError {
                     Text(loginError).font(.caption).foregroundStyle(.red)
+                }
+            }
+            Section("Actualizaciones") {
+                Toggle("Buscar e instalar actualizaciones automáticamente", isOn: $autoUpdate)
+                HStack {
+                    Text("Versión \(updater.currentVersion)")
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    if updater.isWorking { ProgressView().controlSize(.small) }
+                    Button("Buscar ahora") {
+                        Task { await updater.check(userInitiated: true) }
+                    }
+                    .disabled(updater.isWorking)
+                }
+                if let status = updater.statusText {
+                    Text(status).font(.caption).foregroundStyle(.secondary)
                 }
             }
             Section("Acerca de") {
@@ -219,11 +249,8 @@ private struct GeneralSettings: View {
         .onChange(of: refreshMinutes) { _ in store.scheduleTimer() }
         .onChange(of: launchAtLogin) { enabled in
             do {
-                if enabled {
-                    try SMAppService.mainApp.register()
-                } else {
-                    try SMAppService.mainApp.unregister()
-                }
+                try LoginItem.setEnabled(enabled)
+                needsApproval = LoginItem.needsApproval
                 loginError = nil
             } catch {
                 loginError = "No se pudo cambiar: \(error.localizedDescription). Asegúrate de que la app está en la carpeta Aplicaciones."
