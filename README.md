@@ -23,7 +23,36 @@ Los datos vienen de [Open-Meteo](https://open-meteo.com) (licencia CC BY 4.0). E
 
 ## Instalación
 
-Necesitas macOS 13 o posterior y las herramientas de línea de comandos de Xcode (`xcode-select --install`). No hace falta Xcode completo.
+Funciona en macOS 13 Ventura o posterior, en Macs con chip Apple y con Intel. Abre la app **Terminal** y pega:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/davidcasanovasola-git/TiempoDock/main/scripts/get.sh | bash
+```
+
+Esto descarga la última versión, comprueba su suma SHA-256, la copia a Aplicaciones y la abre. No hace falta Xcode ni compilar nada, y macOS no muestra avisos. Puedes leer antes el script: [`scripts/get.sh`](scripts/get.sh).
+
+La primera vez macOS te pedirá permiso para usar tu ubicación. Si no se lo das, o tu Mac no tiene localización, añade tu ciudad en **Ajustes › Ubicaciones**.
+
+Para que se abra sola al encender el Mac: **Ajustes › General › Abrir TiempoDock al iniciar sesión**. Al iniciar sesión se abre **sin ventana**: solo aparece el icono del Dock. Conviene además fijarla en el Dock: clic derecho en el icono › Opciones › Mantener en el Dock.
+
+### Si descargas el zip desde el navegador
+
+TiempoDock es gratuito y de código abierto, y no está firmado con un certificado de pago de Apple. Por eso, si descargas `TiempoDock.zip` desde la página de Releases con el navegador, macOS lo bloqueará la primera vez. Para abrirlo:
+
+1. Arrastra `TiempoDock.app` a Aplicaciones e intenta abrirla.
+2. Ve a **Ajustes del Sistema › Privacidad y seguridad** y pulsa **Abrir igualmente**.
+
+O, en Terminal:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/TiempoDock.app
+```
+
+Con el instalador de una línea no hace falta nada de esto.
+
+### Compilar desde el código
+
+Necesitas las herramientas de línea de comandos de Xcode (`xcode-select --install`). No hace falta Xcode completo.
 
 ```bash
 git clone https://github.com/davidcasanovasola-git/TiempoDock.git
@@ -31,25 +60,32 @@ cd TiempoDock
 ./scripts/install.sh
 ```
 
-El script compila la app, la copia a `/Applications/TiempoDock.app` y la abre. La primera vez macOS te pedirá permiso para usar tu ubicación. Si no se lo das, añade una ciudad en **Ajustes › Ubicaciones**.
-
-Para que se abra sola al encender el Mac: **Ajustes › General › Abrir TiempoDock al iniciar sesión**. Al iniciar sesión se abre **sin ventana**: solo aparece el icono del Dock. Conviene además fijarla en el Dock: clic derecho en el icono › Opciones › Mantener en el Dock.
-
-Solo compilar, sin instalar: `./scripts/build.sh`, que deja la app en `build/TiempoDock.app`.
+Solo compilar, sin instalar: `./scripts/build.sh`, que deja la app universal en `build/TiempoDock.app`.
 
 ## Actualizaciones automáticas
 
-La app comprueba [GitHub Releases](../../releases) al abrirse y cada 6 horas. Si hay una versión nueva, la descarga, comprueba que es TiempoDock con una firma válida, se reemplaza en `/Applications` y se vuelve a abrir. Si estaba sin ventana, sigue sin ventana. Se puede desactivar o forzar en **Ajustes › General › Actualizaciones**, o desde el menú **TiempoDock › Buscar actualizaciones…**.
+La app comprueba [GitHub Releases](https://github.com/davidcasanovasola-git/TiempoDock/releases) al abrirse y cada 6 horas. Si hay una versión nueva:
 
-Para publicar una versión nueva:
+1. Descarga `TiempoDock.zip`.
+2. Comprueba que su suma SHA-256 coincide con `TiempoDock.zip.sha256`.
+3. Comprueba que GitHub tiene una **certificación de origen** para ese archivo exacto, es decir, que lo generó el workflow oficial de este repositorio a partir de su código. Si no, no instala nada.
+4. Comprueba que es TiempoDock y que su firma es válida, se reemplaza y se vuelve a abrir. Si estaba sin ventana, sigue sin ventana.
+
+Se puede desactivar o forzar en **Ajustes › General › Actualizaciones**, o desde el menú **TiempoDock › Buscar actualizaciones…**.
+
+Cualquiera puede comprobar a mano el origen de un zip con:
 
 ```bash
-./scripts/release.sh 1.1.0
+gh attestation verify TiempoDock.zip --repo davidcasanovasola-git/TiempoDock
 ```
 
-Eso crea y sube la etiqueta `v1.1.0`. El workflow `.github/workflows/release.yml` compila la app en GitHub Actions y la publica como `TiempoDock.zip` en un release nuevo.
+### Publicar una versión nueva
 
-> El repositorio tiene que ser **público** para que la app pueda leer los releases sin credenciales.
+```bash
+./scripts/release.sh 1.2.0
+```
+
+Eso crea y sube la etiqueta `v1.2.0`. El workflow [`.github/workflows/release.yml`](.github/workflows/release.yml) compila la app universal, calcula la suma, genera la certificación de origen y publica el release.
 
 ## Estructura
 
@@ -69,7 +105,8 @@ Eso crea y sube la etiqueta `v1.1.0`. El workflow `.github/workflows/release.yml
 
 ## Notas
 
-- La app se firma localmente (ad-hoc), así que funciona en el Mac donde la compilas. Para repartirla a otros Macs habría que firmarla y notarizarla con una cuenta de desarrollador de Apple.
+- La app lleva una firma local (ad-hoc), no un certificado de pago de Apple. La integridad y el origen de cada versión se garantizan con la suma SHA-256 y la certificación de origen de GitHub.
+- Con cada actualización macOS puede volver a pedir el permiso de ubicación, porque la firma local cambia de una versión a otra.
 - Cuando la app está cerrada, el Dock vuelve a mostrar el icono normal: el dato solo se dibuja mientras está abierta.
 
 ## Licencia

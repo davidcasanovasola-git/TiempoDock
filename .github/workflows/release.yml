@@ -1,5 +1,5 @@
 # Publica una versión nueva al subir una etiqueta vX.Y.Z:
-#   git tag v1.1.0 && git push origin v1.1.0   (o ./scripts/release.sh 1.1.0)
+#   ./scripts/release.sh 1.1.0
 # Las apps instaladas la detectan y se actualizan solas.
 name: Release
 
@@ -8,7 +8,9 @@ on:
     tags: ["v*"]
 
 permissions:
-  contents: write
+  contents: write      # crear el release
+  id-token: write      # firmar la certificación de origen (Sigstore)
+  attestations: write  # guardar la certificación en GitHub
 
 jobs:
   release:
@@ -16,16 +18,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Compilar
+      - name: Compilar (universal arm64 + x86_64)
         run: VERSION="${GITHUB_REF_NAME#v}" ./scripts/build.sh
 
-      - name: Empaquetar
-        run: cd build && ditto -c -k --keepParent TiempoDock.app TiempoDock.zip
+      - name: Empaquetar y calcular SHA-256
+        run: |
+          cd build
+          ditto -c -k --keepParent TiempoDock.app TiempoDock.zip
+          shasum -a 256 TiempoDock.zip | tee TiempoDock.zip.sha256
+
+      # Certificado firmado por GitHub de que este zip lo generó este workflow
+      # a partir de este repositorio. El actualizador de la app lo comprueba.
+      - name: Certificar el origen del build
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: build/TiempoDock.zip
 
       - name: Publicar en GitHub Releases
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" build/TiempoDock.zip \
+          gh release create "$GITHUB_REF_NAME" build/TiempoDock.zip build/TiempoDock.zip.sha256 \
             --title "TiempoDock ${GITHUB_REF_NAME#v}" \
             --generate-notes

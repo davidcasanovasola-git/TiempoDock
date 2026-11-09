@@ -1,10 +1,13 @@
 import AppKit
+import CryptoKit
 
 /// Actualizaciones automáticas desde GitHub Releases.
 ///
-/// Cada versión publicada (etiqueta `vX.Y.Z`) lleva adjunto `TiempoDock.zip`.
-/// La app consulta la última versión, y si es más nueva la descarga, comprueba
-/// que es TiempoDock con una firma válida, se cierra, se reemplaza y se vuelve a abrir.
+/// Cada versión publicada (etiqueta `vX.Y.Z`) lleva adjunto `TiempoDock.zip`,
+/// su suma `TiempoDock.zip.sha256` y una certificación de origen de GitHub.
+/// La app consulta la última versión y, si es más nueva, la descarga, comprueba
+/// la suma y la certificación, que es TiempoDock con una firma válida, y se
+/// cierra, se reemplaza y se vuelve a abrir.
 @MainActor
 final class Updater: ObservableObject {
     static let shared = Updater()
@@ -22,9 +25,13 @@ final class Updater: ObservableObject {
         case invalidApp
         case notWritable(String)
         case commandFailed(String)
+        case checksumMismatch
+        case notAttested
 
         var errorDescription: String? {
             switch self {
+            case .checksumMismatch: return "La suma SHA-256 del archivo descargado no coincide con la publicada."
+            case .notAttested: return "GitHub no certifica que este archivo lo haya generado el workflow oficial del repositorio. No se instala."
             case .noReleases: return "Todavía no hay versiones publicadas en GitHub."
             case .badStatus(let c): return "GitHub respondió con el código \(c)."
             case .missingAsset(let v): return "La versión \(v) no incluye TiempoDock.zip."
@@ -84,8 +91,9 @@ final class Updater: ObservableObject {
             guard let asset = release.assets.first(where: { $0.name == Self.assetName }) else {
                 throw UpdateError.missingAsset(latest)
             }
+            let checksumURL = release.assets.first(where: { $0.name == Self.assetName + ".sha256" })?.browser_download_url
             statusText = "Descargando la versión \(latest)…"
-            try await install(from: asset.browser_download_url, version: latest)
+            try await install(from: asset.browser_download_url, checksumURL: checksumURL, version: latest)
         } catch {
             statusText = "No se pudo actualizar: \(error.localizedDescription)"
             if userInitiated { showAlert(statusText!) }
@@ -104,7 +112,47 @@ final class Updater: ObservableObject {
         return try JSONDecoder().decode(Release.self, from: data)
     }
 
-    private func install(from url: URL, version: String) async throws {
+    // MARK: - Verificación del origen
+
+    /// Comprueba que el zip descargado es exactamente el que generó el workflow
+    /// de este repositorio: la suma SHA-256 coincide con la publicada y GitHub
+    /// tiene una certificación de origen (build provenance) para esa suma.
+    private func verifyOrigin(of zip: URL, checksumURL: URL?) async throws {
+        let digest = try sha256(of: zip)
+
+        if let checksumURL {
+            let (data, _) = try await URLSession.shared.data(from: checksumURL)
+            let published = String(decoding: data, as: UTF8.self)
+                .split(whereSeparator: { $0 == " " || $0 == "\n" }).first.map(String.init)?.lowercased()
+            guard published == digest else { throw UpdateError.checksumMismatch }
+        }
+
+        var request = URLRequest(url: URL(string: "https://api.github.com/repos/\(Self.repository)/attestations/sha256:\(digest)")!)
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        request.setValue("TiempoDock/\(currentVersion)", forHTTPHeaderField: "User-Agent")
+        request.timeoutInterval = 20
+        let (data, response) = try await URLSession.shared.data(for: request)
+        let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+        struct Attestations: Decodable { let attestations: [AnyAttestation] }
+        struct AnyAttestation: Decodable {}
+        guard code == 200,
+              let list = try? JSONDecoder().decode(Attestations.self, from: data),
+              !list.attestations.isEmpty else {
+            throw UpdateError.notAttested
+        }
+    }
+
+    private func sha256(of url: URL) throws -> String {
+        let handle = try FileHandle(forReadingFrom: url)
+        defer { try? handle.close() }
+        var hasher = SHA256()
+        while let chunk = try handle.read(upToCount: 1 << 20), !chunk.isEmpty {
+            hasher.update(data: chunk)
+        }
+        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+    }
+
+    private func install(from url: URL, checksumURL: URL?, version: String) async throws {
         let fm = FileManager.default
         let target = Bundle.main.bundleURL
         let parent = target.deletingLastPathComponent().path
@@ -118,6 +166,9 @@ final class Updater: ObservableObject {
         guard code == 200 else { throw UpdateError.badStatus(code) }
         let zip = work.appendingPathComponent("update.zip")
         try fm.moveItem(at: downloaded, to: zip)
+
+        statusText = "Comprobando el origen de la versión \(version)…"
+        try await verifyOrigin(of: zip, checksumURL: checksumURL)
 
         statusText = "Preparando la versión \(version)…"
         try await run("/usr/bin/ditto", ["-x", "-k", zip.path, work.path])

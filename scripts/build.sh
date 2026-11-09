@@ -6,14 +6,21 @@ cd "$(dirname "$0")/.."
 APP_NAME="TiempoDock"
 OUT="build/$APP_NAME.app"
 
-echo "→ Compilando…"
-swift build -c release
-BIN="$(swift build -c release --show-bin-path)/$APP_NAME"
+# Binario universal: se compila para Apple (arm64) e Intel (x86_64) y se combinan.
+ARCHS="${ARCHS:-arm64 x86_64}"
+BINS=()
+for ARCH in $ARCHS; do
+    echo "→ Compilando para ${ARCH}…"
+    swift build -c release --arch "$ARCH"
+    BINS+=("$(swift build -c release --arch "$ARCH" --show-bin-path)/$APP_NAME")
+done
+# Binario de la arquitectura de este Mac, para generar el icono.
+BIN="$(swift build -c release --arch "$(uname -m)" --show-bin-path)/$APP_NAME"
 
 echo "→ Montando ${OUT}…"
 rm -rf build
 mkdir -p "$OUT/Contents/MacOS" "$OUT/Contents/Resources"
-cp "$BIN" "$OUT/Contents/MacOS/$APP_NAME"
+lipo -create "${BINS[@]}" -output "$OUT/Contents/MacOS/$APP_NAME"
 cp Resources/Info.plist "$OUT/Contents/Info.plist"
 mkdir -p "$OUT/Contents/Library/LaunchAgents"
 cp Resources/io.github.tiempodock.agent.plist "$OUT/Contents/Library/LaunchAgents/"
