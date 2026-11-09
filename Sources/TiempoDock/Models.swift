@@ -11,13 +11,19 @@ enum Prefs {
     static let locations = "locations"
     static let selectedLocationID = "selectedLocationID"
     static let autoUpdate = "autoUpdate"
+    static let precipitationUnit = "precipitationUnit"
+    static let timeFormat = "timeFormat"
 
     static func register() {
+        // Unidades iniciales según la región del Mac (EE. UU.: °F, mph y pulgadas).
+        let imperial = Locale.current.measurementSystem == .us
         UserDefaults.standard.register(defaults: [
             autoUpdate: true,
             dockMetric: DockMetric.temperature.rawValue,
-            temperatureUnit: TemperatureUnit.celsius.rawValue,
-            windUnit: WindUnit.kmh.rawValue,
+            temperatureUnit: (imperial ? TemperatureUnit.fahrenheit : .celsius).rawValue,
+            windUnit: (imperial ? WindUnit.mph : .kmh).rawValue,
+            precipitationUnit: (imperial ? PrecipitationUnit.inch : .mm).rawValue,
+            timeFormat: TimeFormat.system.rawValue,
             refreshMinutes: 15,
             showMenuBar: false,
         ])
@@ -35,6 +41,14 @@ enum Prefs {
         WindUnit(rawValue: UserDefaults.standard.string(forKey: windUnit) ?? "") ?? .kmh
     }
 
+    static var currentPrecipitationUnit: PrecipitationUnit {
+        PrecipitationUnit(rawValue: UserDefaults.standard.string(forKey: precipitationUnit) ?? "") ?? .mm
+    }
+
+    static var currentTimeFormat: TimeFormat {
+        TimeFormat(rawValue: UserDefaults.standard.string(forKey: timeFormat) ?? "") ?? .system
+    }
+
     static var currentRefreshMinutes: Int {
         max(5, UserDefaults.standard.integer(forKey: refreshMinutes))
     }
@@ -47,13 +61,13 @@ enum DockMetric: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .temperature: return "Temperatura actual"
-        case .feelsLike: return "Sensación térmica"
-        case .wind: return "Viento"
-        case .humidity: return "Humedad"
-        case .todayHighLow: return "Máxima / mínima de hoy"
-        case .tomorrowHighLow: return "Máxima / mínima de mañana"
-        case .precipitationChance: return "Probabilidad de lluvia hoy"
+        case .temperature: return L("Current temperature")
+        case .feelsLike: return L("Feels-like temperature")
+        case .wind: return L("Wind")
+        case .humidity: return L("Humidity")
+        case .todayHighLow: return L("Today's high / low")
+        case .tomorrowHighLow: return L("Tomorrow's high / low")
+        case .precipitationChance: return L("Chance of rain today")
         }
     }
 }
@@ -72,7 +86,34 @@ enum WindUnit: String, CaseIterable, Identifiable {
         case .kmh: return "km/h"
         case .ms: return "m/s"
         case .mph: return "mph"
-        case .kn: return "nudos"
+        case .kn: return L("kn")
+        }
+    }
+    var title: String {
+        switch self {
+        case .kmh: return L("Kilometers per hour (km/h)")
+        case .ms: return L("Meters per second (m/s)")
+        case .mph: return L("Miles per hour (mph)")
+        case .kn: return L("Knots (kn)")
+        }
+    }
+}
+
+enum PrecipitationUnit: String, CaseIterable, Identifiable {
+    case mm, inch
+    var id: String { rawValue }
+    var symbol: String { self == .mm ? "mm" : "in" }
+    var title: String { self == .mm ? L("Millimeters (mm)") : L("Inches (in)") }
+}
+
+enum TimeFormat: String, CaseIterable, Identifiable {
+    case system, h24, h12
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .system: return L("System default")
+        case .h24: return L("24-hour")
+        case .h12: return L("12-hour")
         }
     }
 }
@@ -90,7 +131,7 @@ struct SavedLocation: Codable, Identifiable, Hashable {
     var hasCoordinates: Bool { latitude != 0 || longitude != 0 }
 
     static func currentPlaceholder() -> SavedLocation {
-        SavedLocation(name: "Ubicación actual", detail: "", latitude: 0, longitude: 0, isCurrentLocation: true)
+        SavedLocation(name: L("Current Location"), detail: "", latitude: 0, longitude: 0, isCurrentLocation: true)
     }
 }
 
@@ -135,6 +176,7 @@ struct Forecast {
     let days: [Day]
     let temperatureUnit: TemperatureUnit
     let windUnit: WindUnit
+    let precipitationUnit: PrecipitationUnit
 
     /// Las próximas 24 horas empezando por la hora en curso.
     var upcomingHours: [Hour] {

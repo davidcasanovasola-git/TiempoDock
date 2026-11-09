@@ -30,14 +30,14 @@ final class Updater: ObservableObject {
 
         var errorDescription: String? {
             switch self {
-            case .checksumMismatch: return "La suma SHA-256 del archivo descargado no coincide con la publicada."
-            case .notAttested: return "GitHub no certifica que este archivo lo haya generado el workflow oficial del repositorio. No se instala."
-            case .noReleases: return "Todavía no hay versiones publicadas en GitHub."
-            case .badStatus(let c): return "GitHub respondió con el código \(c)."
-            case .missingAsset(let v): return "La versión \(v) no incluye TiempoDock.zip."
-            case .invalidApp: return "El archivo descargado no es una versión válida de TiempoDock."
-            case .notWritable(let p): return "No se puede escribir en \(p)."
-            case .commandFailed(let c): return "Falló: \(c)"
+            case .checksumMismatch: return L("The SHA-256 checksum of the download doesn't match the published one.")
+            case .notAttested: return L("GitHub doesn't certify that this file was built by the repository's official workflow. It won't be installed.")
+            case .noReleases: return L("There are no releases on GitHub yet.")
+            case .badStatus(let c): return L("GitHub responded with code %d.", c)
+            case .missingAsset(let v): return L("Version %@ doesn't include TiempoDock.zip.", v)
+            case .invalidApp: return L("The downloaded file isn't a valid version of TiempoDock.")
+            case .notWritable(let p): return L("Can't write to %@.", p)
+            case .commandFailed(let c): return L("Failed: %@", c)
             }
         }
     }
@@ -79,12 +79,12 @@ final class Updater: ObservableObject {
         guard !isWorking else { return }
         isWorking = true
         defer { isWorking = false }
-        statusText = "Buscando actualizaciones…"
+        statusText = L("Checking for updates…")
         do {
             let release = try await latestRelease()
             let latest = release.tag_name.trimmingCharacters(in: CharacterSet(charactersIn: "vV"))
             guard Self.isVersion(latest, newerThan: currentVersion) else {
-                statusText = "Tienes la última versión (\(currentVersion))."
+                statusText = L("You have the latest version (%@).", currentVersion)
                 if userInitiated { showAlert(statusText!) }
                 return
             }
@@ -92,10 +92,10 @@ final class Updater: ObservableObject {
                 throw UpdateError.missingAsset(latest)
             }
             let checksumURL = release.assets.first(where: { $0.name == Self.assetName + ".sha256" })?.browser_download_url
-            statusText = "Descargando la versión \(latest)…"
+            statusText = L("Downloading version %@…", latest)
             try await install(from: asset.browser_download_url, checksumURL: checksumURL, version: latest)
         } catch {
-            statusText = "No se pudo actualizar: \(error.localizedDescription)"
+            statusText = L("Couldn't update: %@", error.localizedDescription)
             if userInitiated { showAlert(statusText!) }
         }
     }
@@ -167,10 +167,10 @@ final class Updater: ObservableObject {
         let zip = work.appendingPathComponent("update.zip")
         try fm.moveItem(at: downloaded, to: zip)
 
-        statusText = "Comprobando el origen de la versión \(version)…"
+        statusText = L("Verifying the origin of version %@…", version)
         try await verifyOrigin(of: zip, checksumURL: checksumURL)
 
-        statusText = "Preparando la versión \(version)…"
+        statusText = L("Preparing version %@…", version)
         try await run("/usr/bin/ditto", ["-x", "-k", zip.path, work.path])
         let newApp = work.appendingPathComponent("TiempoDock.app")
         guard let bundle = Bundle(url: newApp),
@@ -195,7 +195,7 @@ final class Updater: ObservableObject {
                              target.path, newApp.path, work.path, background ? "1" : "0"]
         try process.run()
 
-        statusText = "Instalando la versión \(version)…"
+        statusText = L("Installing version %@…", version)
         NSApp.terminate(nil)
     }
 
@@ -219,7 +219,7 @@ final class Updater: ObservableObject {
 
     private func showAlert(_ text: String) {
         let alert = NSAlert()
-        alert.messageText = "Actualizaciones de TiempoDock"
+        alert.messageText = L("TiempoDock Updates")
         alert.informativeText = text
         NSApp.activate(ignoringOtherApps: true)
         alert.runModal()

@@ -6,12 +6,13 @@ enum WeatherService {
         case badStatus(Int)
         var errorDescription: String? {
             switch self {
-            case .badStatus(let code): return "El servidor respondió con el código \(code)"
+            case .badStatus(let code): return L("The server responded with code %d.", code)
             }
         }
     }
 
-    static func forecast(for location: SavedLocation, temperatureUnit: TemperatureUnit, windUnit: WindUnit) async throws -> Forecast {
+    static func forecast(for location: SavedLocation, temperatureUnit: TemperatureUnit, windUnit: WindUnit,
+                         precipitationUnit: PrecipitationUnit = Prefs.currentPrecipitationUnit) async throws -> Forecast {
         var components = URLComponents(string: "https://api.open-meteo.com/v1/forecast")!
         components.queryItems = [
             URLQueryItem(name: "latitude", value: String(location.latitude)),
@@ -24,10 +25,11 @@ enum WeatherService {
             URLQueryItem(name: "timeformat", value: "unixtime"),
             URLQueryItem(name: "temperature_unit", value: temperatureUnit.rawValue),
             URLQueryItem(name: "wind_speed_unit", value: windUnit.rawValue),
+            URLQueryItem(name: "precipitation_unit", value: precipitationUnit.rawValue),
         ]
         let data = try await fetch(components.url!)
         let raw = try JSONDecoder().decode(RawForecast.self, from: data)
-        return raw.toForecast(temperatureUnit: temperatureUnit, windUnit: windUnit)
+        return raw.toForecast(temperatureUnit: temperatureUnit, windUnit: windUnit, precipitationUnit: precipitationUnit)
     }
 
     static func searchCities(_ query: String) async throws -> [SavedLocation] {
@@ -96,7 +98,7 @@ private struct RawForecast: Decodable {
         let sunset: [TimeInterval?]
     }
 
-    func toForecast(temperatureUnit: TemperatureUnit, windUnit: WindUnit) -> Forecast {
+    func toForecast(temperatureUnit: TemperatureUnit, windUnit: WindUnit, precipitationUnit: PrecipitationUnit) -> Forecast {
         let tz = TimeZone(identifier: timezone) ?? TimeZone(secondsFromGMT: utc_offset_seconds) ?? .current
 
         let current = Forecast.Current(
@@ -141,7 +143,7 @@ private struct RawForecast: Decodable {
         }
 
         return Forecast(timeZone: tz, current: current, hours: hours, days: days,
-                        temperatureUnit: temperatureUnit, windUnit: windUnit)
+                        temperatureUnit: temperatureUnit, windUnit: windUnit, precipitationUnit: precipitationUnit)
     }
 }
 

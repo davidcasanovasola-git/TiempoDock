@@ -5,11 +5,11 @@ struct SettingsView: View {
     var body: some View {
         TabView {
             LocationsSettings()
-                .tabItem { Label("Ubicaciones", systemImage: "mappin.and.ellipse") }
+                .tabItem { Label(L("Locations"), systemImage: "mappin.and.ellipse") }
             DisplaySettings()
-                .tabItem { Label("Dock y unidades", systemImage: "dock.rectangle") }
+                .tabItem { Label(L("Dock & Units"), systemImage: "dock.rectangle") }
             GeneralSettings()
-                .tabItem { Label("General", systemImage: "gearshape") }
+                .tabItem { Label(L("General"), systemImage: "gearshape") }
         }
         .padding(16)
         .frame(width: 540, height: 600)
@@ -28,9 +28,9 @@ private struct LocationsSettings: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Tus ubicaciones")
+            Text(L("Your Locations"))
                 .font(.headline)
-            Text("Haz clic en una para mostrarla en el icono del Dock.")
+            Text(L("Click one to show it in the Dock icon."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -48,7 +48,7 @@ private struct LocationsSettings: View {
                         }
                         Spacer()
                         if loc.id == store.selectedLocation?.id {
-                            Label("En el Dock", systemImage: "checkmark")
+                            Label(L("In Dock"), systemImage: "checkmark")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -58,7 +58,7 @@ private struct LocationsSettings: View {
                             Image(systemName: "trash")
                         }
                         .buttonStyle(.borderless)
-                        .help("Eliminar")
+                        .help(L("Remove"))
                     }
                     .contentShape(Rectangle())
                     .onTapGesture { store.select(loc.id) }
@@ -71,16 +71,16 @@ private struct LocationsSettings: View {
                 Button {
                     store.addCurrentLocation()
                 } label: {
-                    Label("Añadir mi ubicación actual", systemImage: "location")
+                    Label(L("Add My Current Location"), systemImage: "location")
                 }
             }
 
             Divider()
 
-            Text("Añadir una ciudad")
+            Text(L("Add a City"))
                 .font(.headline)
             HStack {
-                TextField("Escribe una ciudad, p. ej. Valencia", text: $query)
+                TextField(L("Type a city, e.g. London"), text: $query)
                     .textFieldStyle(.roundedBorder)
                     .onSubmit { search(immediately: true) }
                     .onChange(of: query) { _ in search(immediately: false) }
@@ -96,7 +96,7 @@ private struct LocationsSettings: View {
                         Text(result.detail).font(.caption).foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Button("Añadir") {
+                    Button(L("Add")) {
                         store.add(result)
                         query = ""
                         results = []
@@ -126,10 +126,10 @@ private struct LocationsSettings: View {
                 let found = try await WeatherService.searchCities(text)
                 guard !Task.isCancelled else { return }
                 results = found
-                searchError = found.isEmpty ? "No se ha encontrado ninguna ciudad con ese nombre." : nil
+                searchError = found.isEmpty ? L("No city found with that name.") : nil
             } catch {
                 if !Task.isCancelled {
-                    searchError = "Error al buscar: \(error.localizedDescription)"
+                    searchError = L("Search failed: %@", error.localizedDescription)
                 }
             }
         }
@@ -143,12 +143,14 @@ private struct DisplaySettings: View {
     @AppStorage(Prefs.dockMetric) private var metric: DockMetric = .temperature
     @AppStorage(Prefs.temperatureUnit) private var temperatureUnit: TemperatureUnit = .celsius
     @AppStorage(Prefs.windUnit) private var windUnit: WindUnit = .kmh
+    @AppStorage(Prefs.precipitationUnit) private var precipitationUnit: PrecipitationUnit = .mm
+    @AppStorage(Prefs.timeFormat) private var timeFormat: TimeFormat = .system
     @AppStorage(Prefs.showMenuBar) private var showMenuBar = false
 
     var body: some View {
         Form {
-            Section("Icono del Dock") {
-                Picker("Mostrar", selection: $metric) {
+            Section(L("Dock Icon")) {
+                Picker(L("Show"), selection: $metric) {
                     ForEach(DockMetric.allCases) { Text($0.title).tag($0) }
                 }
                 if let f = store.forecast, let image = DockIconRenderer.nsImage(.make(forecast: f, metric: metric), pixels: 256) {
@@ -161,16 +163,22 @@ private struct DisplaySettings: View {
                     }
                 }
             }
-            Section("Unidades") {
-                Picker("Temperatura", selection: $temperatureUnit) {
+            Section(L("Units")) {
+                Picker(L("Temperature"), selection: $temperatureUnit) {
                     ForEach(TemperatureUnit.allCases) { Text($0.title).tag($0) }
                 }
-                Picker("Viento", selection: $windUnit) {
-                    ForEach(WindUnit.allCases) { Text($0.symbol).tag($0) }
+                Picker(L("Wind"), selection: $windUnit) {
+                    ForEach(WindUnit.allCases) { Text($0.title).tag($0) }
+                }
+                Picker(L("Precipitation"), selection: $precipitationUnit) {
+                    ForEach(PrecipitationUnit.allCases) { Text($0.title).tag($0) }
+                }
+                Picker(L("Time format"), selection: $timeFormat) {
+                    ForEach(TimeFormat.allCases) { Text($0.title).tag($0) }
                 }
             }
-            Section("Barra de menús") {
-                Toggle("Mostrar también la temperatura en la barra de menús", isOn: $showMenuBar)
+            Section(L("Menu Bar")) {
+                Toggle(L("Also show the temperature in the menu bar"), isOn: $showMenuBar)
             }
         }
         .formStyle(.grouped)
@@ -178,6 +186,8 @@ private struct DisplaySettings: View {
         .onChange(of: showMenuBar) { _ in store.displaySettingsChanged() }
         .onChange(of: temperatureUnit) { _ in store.unitsChanged() }
         .onChange(of: windUnit) { _ in store.unitsChanged() }
+        .onChange(of: precipitationUnit) { _ in store.unitsChanged() }
+        .onChange(of: timeFormat) { _ in store.displaySettingsChanged() }
     }
 }
 
@@ -194,43 +204,43 @@ private struct GeneralSettings: View {
 
     var body: some View {
         Form {
-            Section("Actualización") {
-                Picker("Actualizar cada", selection: $refreshMinutes) {
-                    Text("5 minutos").tag(5)
-                    Text("10 minutos").tag(10)
-                    Text("15 minutos").tag(15)
-                    Text("30 minutos").tag(30)
-                    Text("1 hora").tag(60)
+            Section(L("Refresh")) {
+                Picker(L("Refresh every"), selection: $refreshMinutes) {
+                    Text(L("%d minutes", 5)).tag(5)
+                    Text(L("%d minutes", 10)).tag(10)
+                    Text(L("%d minutes", 15)).tag(15)
+                    Text(L("%d minutes", 30)).tag(30)
+                    Text(L("1 hour")).tag(60)
                 }
-                Text("También se actualiza al despertar el Mac y al cambiar de ubicación.")
+                Text(L("It also refreshes when your Mac wakes up and when you change location."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Section("Inicio") {
-                Toggle("Abrir TiempoDock al iniciar sesión", isOn: $launchAtLogin)
-                Text("Al iniciar sesión se abre sin ventana: solo aparece el icono del Dock.")
+            Section(L("Startup")) {
+                Toggle(L("Open TiempoDock at login"), isOn: $launchAtLogin)
+                Text(L("At login it opens without a window: only the Dock icon appears."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if needsApproval {
                     HStack {
-                        Text("macOS necesita que lo apruebes en Elementos de inicio.")
+                        Text(L("macOS needs you to approve it in Login Items."))
                             .font(.caption)
                             .foregroundStyle(.orange)
-                        Button("Abrir Ajustes del Sistema") { LoginItem.openSystemSettings() }
+                        Button(L("Open System Settings")) { LoginItem.openSystemSettings() }
                     }
                 }
                 if let loginError {
                     Text(loginError).font(.caption).foregroundStyle(.red)
                 }
             }
-            Section("Actualizaciones") {
-                Toggle("Buscar e instalar actualizaciones automáticamente", isOn: $autoUpdate)
+            Section(L("Updates")) {
+                Toggle(L("Check for and install updates automatically"), isOn: $autoUpdate)
                 HStack {
-                    Text("Versión \(updater.currentVersion)")
+                    Text(L("Version %@", updater.currentVersion))
                         .foregroundStyle(.secondary)
                     Spacer()
                     if updater.isWorking { ProgressView().controlSize(.small) }
-                    Button("Buscar ahora") {
+                    Button(L("Check Now")) {
                         Task { await updater.check(userInitiated: true) }
                     }
                     .disabled(updater.isWorking)
@@ -239,8 +249,8 @@ private struct GeneralSettings: View {
                     Text(status).font(.caption).foregroundStyle(.secondary)
                 }
             }
-            Section("Acerca de") {
-                Text("TiempoDock es gratuito y de código abierto (licencia MIT). Los datos meteorológicos son de Open-Meteo.com (CC BY 4.0), sin cuenta ni clave de API.")
+            Section(L("About")) {
+                Text(L("TiempoDock is free and open source (MIT license). Weather data comes from Open-Meteo.com (CC BY 4.0), with no account or API key."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -253,7 +263,7 @@ private struct GeneralSettings: View {
                 needsApproval = LoginItem.needsApproval
                 loginError = nil
             } catch {
-                loginError = "No se pudo cambiar: \(error.localizedDescription). Asegúrate de que la app está en la carpeta Aplicaciones."
+                loginError = L("Couldn't change it: %@. Make sure the app is in the Applications folder.", error.localizedDescription)
             }
         }
     }

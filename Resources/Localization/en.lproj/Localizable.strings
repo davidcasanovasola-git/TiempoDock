@@ -1,0 +1,9 @@
+/* English is the source language: the keys are the English texts. */
+"compass.N" = "N";
+"compass.NE" = "NE";
+"compass.E" = "E";
+"compass.SE" = "SE";
+"compass.S" = "S";
+"compass.SW" = "SW";
+"compass.W" = "W";
+"compass.NW" = "NW";

@@ -32,6 +32,15 @@ final class WeatherStore: NSObject, ObservableObject {
         selectedLocation.flatMap { lastUpdated[$0.id] }
     }
 
+    /// Tienda de solo lectura para capturas de pantalla: no lee ni guarda preferencias.
+    init(preview location: SavedLocation, forecast: Forecast) {
+        super.init()
+        locations = [location]
+        selectedID = location.id
+        forecasts[location.id] = forecast
+        lastUpdated[location.id] = Date()
+    }
+
     override init() {
         super.init()
         loadLocations()
@@ -50,7 +59,7 @@ final class WeatherStore: NSObject, ObservableObject {
                 selectedID = locations[0].id
                 saveLocations()
             } else {
-                errorMessage = "Este Mac no tiene la localización activada. Añade tu ciudad en Ajustes › Ubicaciones."
+                errorMessage = L("Location services are off on this Mac. Add your city in Settings › Locations.")
                 DispatchQueue.main.async { (NSApp.delegate as? AppDelegate)?.showSettings() }
             }
         }
@@ -108,7 +117,7 @@ final class WeatherStore: NSObject, ObservableObject {
             lastUpdated[location.id] = Date()
             errorMessage = nil
         } catch {
-            errorMessage = "No se pudo actualizar el tiempo: \(error.localizedDescription)"
+            errorMessage = L("Couldn't update the weather: %@", error.localizedDescription)
         }
         onChange?()
     }
@@ -157,6 +166,7 @@ final class WeatherStore: NSObject, ObservableObject {
 
     /// Cambió lo que muestra el Dock o la barra de menús: solo hay que redibujar.
     func displaySettingsChanged() {
+        objectWillChange.send()
         onChange?()
     }
 
@@ -197,7 +207,7 @@ final class WeatherStore: NSObject, ObservableObject {
         case .notDetermined:
             locationManager.requestWhenInUseAuthorization()
         case .denied, .restricted:
-            errorMessage = "TiempoDock no tiene permiso para usar tu ubicación. Actívalo en Ajustes del Sistema › Privacidad y seguridad › Localización, o añade una ciudad en los ajustes de la app."
+            errorMessage = L("TiempoDock doesn't have permission to use your location. Turn it on in System Settings › Privacy & Security › Location Services, or add a city in the app's settings.")
             onChange?()
         default:
             locationManager.requestLocation()
@@ -216,8 +226,8 @@ final class WeatherStore: NSObject, ObservableObject {
         locations[index].latitude = latitude
         locations[index].longitude = longitude
         if let placemark = try? await CLGeocoder().reverseGeocodeLocation(newLocation).first {
-            locations[index].name = placemark.locality ?? placemark.name ?? "Ubicación actual"
-            locations[index].detail = ["Ubicación actual", placemark.country].compactMap { $0 }.joined(separator: " · ")
+            locations[index].name = placemark.locality ?? placemark.name ?? L("Current Location")
+            locations[index].detail = [L("Current Location"), placemark.country].compactMap { $0 }.joined(separator: " · ")
         }
         saveLocations()
         if selectedLocation?.id == old.id {
@@ -244,7 +254,7 @@ extension WeatherStore: CLLocationManagerDelegate {
     }
 
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        let message = "No se pudo obtener tu ubicación (\(error.localizedDescription)). Puedes añadir una ciudad en los ajustes."
+        let message = L("Couldn't get your location (%@). You can add a city in Settings.", error.localizedDescription)
         Task { @MainActor in
             WeatherStore.shared.locationFailed(message)
         }

@@ -28,43 +28,43 @@ enum WeatherCode {
     static func info(_ code: Int, isDay: Bool) -> WeatherInfo {
         switch code {
         case 0:
-            return WeatherInfo(description: "Despejado", symbol: isDay ? "sun.max.fill" : "moon.stars.fill", style: isDay ? .clearDay : .clearNight)
+            return WeatherInfo(description: L("Clear"), symbol: isDay ? "sun.max.fill" : "moon.stars.fill", style: isDay ? .clearDay : .clearNight)
         case 1:
-            return WeatherInfo(description: "Casi despejado", symbol: isDay ? "sun.max.fill" : "moon.fill", style: isDay ? .clearDay : .clearNight)
+            return WeatherInfo(description: L("Mostly clear"), symbol: isDay ? "sun.max.fill" : "moon.fill", style: isDay ? .clearDay : .clearNight)
         case 2:
-            return WeatherInfo(description: "Parcialmente nublado", symbol: isDay ? "cloud.sun.fill" : "cloud.moon.fill", style: isDay ? .clearDay : .clearNight)
+            return WeatherInfo(description: L("Partly cloudy"), symbol: isDay ? "cloud.sun.fill" : "cloud.moon.fill", style: isDay ? .clearDay : .clearNight)
         case 3:
-            return WeatherInfo(description: "Nublado", symbol: "cloud.fill", style: .cloudy)
+            return WeatherInfo(description: L("Cloudy"), symbol: "cloud.fill", style: .cloudy)
         case 45, 48:
-            return WeatherInfo(description: "Niebla", symbol: "cloud.fog.fill", style: .fog)
+            return WeatherInfo(description: L("Fog"), symbol: "cloud.fog.fill", style: .fog)
         case 51, 53, 55:
-            return WeatherInfo(description: "Llovizna", symbol: "cloud.drizzle.fill", style: .rain)
+            return WeatherInfo(description: L("Drizzle"), symbol: "cloud.drizzle.fill", style: .rain)
         case 56, 57:
-            return WeatherInfo(description: "Llovizna helada", symbol: "cloud.sleet.fill", style: .snow)
+            return WeatherInfo(description: L("Freezing drizzle"), symbol: "cloud.sleet.fill", style: .snow)
         case 61, 63:
-            return WeatherInfo(description: "Lluvia", symbol: "cloud.rain.fill", style: .rain)
+            return WeatherInfo(description: L("Rain"), symbol: "cloud.rain.fill", style: .rain)
         case 65:
-            return WeatherInfo(description: "Lluvia fuerte", symbol: "cloud.heavyrain.fill", style: .rain)
+            return WeatherInfo(description: L("Heavy rain"), symbol: "cloud.heavyrain.fill", style: .rain)
         case 66, 67:
-            return WeatherInfo(description: "Lluvia helada", symbol: "cloud.sleet.fill", style: .snow)
+            return WeatherInfo(description: L("Freezing rain"), symbol: "cloud.sleet.fill", style: .snow)
         case 71, 73:
-            return WeatherInfo(description: "Nieve", symbol: "cloud.snow.fill", style: .snow)
+            return WeatherInfo(description: L("Snow"), symbol: "cloud.snow.fill", style: .snow)
         case 75:
-            return WeatherInfo(description: "Nevada fuerte", symbol: "snowflake", style: .snow)
+            return WeatherInfo(description: L("Heavy snow"), symbol: "snowflake", style: .snow)
         case 77:
-            return WeatherInfo(description: "Granos de nieve", symbol: "cloud.snow.fill", style: .snow)
+            return WeatherInfo(description: L("Snow grains"), symbol: "cloud.snow.fill", style: .snow)
         case 80, 81:
-            return WeatherInfo(description: "Chubascos", symbol: isDay ? "cloud.sun.rain.fill" : "cloud.moon.rain.fill", style: .rain)
+            return WeatherInfo(description: L("Showers"), symbol: isDay ? "cloud.sun.rain.fill" : "cloud.moon.rain.fill", style: .rain)
         case 82:
-            return WeatherInfo(description: "Chubascos fuertes", symbol: "cloud.heavyrain.fill", style: .rain)
+            return WeatherInfo(description: L("Heavy showers"), symbol: "cloud.heavyrain.fill", style: .rain)
         case 85, 86:
-            return WeatherInfo(description: "Chubascos de nieve", symbol: "cloud.snow.fill", style: .snow)
+            return WeatherInfo(description: L("Snow showers"), symbol: "cloud.snow.fill", style: .snow)
         case 95:
-            return WeatherInfo(description: "Tormenta", symbol: "cloud.bolt.rain.fill", style: .storm)
+            return WeatherInfo(description: L("Thunderstorm"), symbol: "cloud.bolt.rain.fill", style: .storm)
         case 96, 99:
-            return WeatherInfo(description: "Tormenta con granizo", symbol: "cloud.hail.fill", style: .storm)
+            return WeatherInfo(description: L("Thunderstorm with hail"), symbol: "cloud.hail.fill", style: .storm)
         default:
-            return WeatherInfo(description: "Desconocido", symbol: "questionmark.circle", style: .cloudy)
+            return WeatherInfo(description: L("Unknown"), symbol: "questionmark.circle", style: .cloudy)
         }
     }
 }

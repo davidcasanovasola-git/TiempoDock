@@ -17,22 +17,22 @@ struct DockIconContent {
         case .temperature:
             return DockIconContent(symbol: now.symbol, mainText: Format.deg(f.current.temperature), caption: nil, style: now.style)
         case .feelsLike:
-            return DockIconContent(symbol: now.symbol, mainText: Format.deg(f.current.feelsLike), caption: "Sensación", style: now.style)
+            return DockIconContent(symbol: now.symbol, mainText: Format.deg(f.current.feelsLike), caption: L("Feels like"), style: now.style)
         case .wind:
             return DockIconContent(symbol: "wind", mainText: Format.int(f.current.windSpeed), caption: f.windUnit.symbol, style: now.style)
         case .humidity:
-            return DockIconContent(symbol: "humidity.fill", mainText: Format.int(f.current.humidity) + "%", caption: "Humedad", style: now.style)
+            return DockIconContent(symbol: "humidity.fill", mainText: Format.int(f.current.humidity) + "%", caption: L("Humidity"), style: now.style)
         case .todayHighLow:
             guard let d = f.today else { return make(forecast: f, metric: .temperature) }
             let info = WeatherCode.info(d.code, isDay: true)
-            return DockIconContent(symbol: info.symbol, mainText: "\(Format.deg(d.max))/\(Format.deg(d.min))", caption: "Hoy", style: now.style)
+            return DockIconContent(symbol: info.symbol, mainText: "\(Format.deg(d.max))/\(Format.deg(d.min))", caption: L("Today"), style: now.style)
         case .tomorrowHighLow:
             guard let d = f.tomorrow else { return make(forecast: f, metric: .temperature) }
             let info = WeatherCode.info(d.code, isDay: true)
-            return DockIconContent(symbol: info.symbol, mainText: "\(Format.deg(d.max))/\(Format.deg(d.min))", caption: "Mañana", style: info.style)
+            return DockIconContent(symbol: info.symbol, mainText: "\(Format.deg(d.max))/\(Format.deg(d.min))", caption: L("Tomorrow"), style: info.style)
         case .precipitationChance:
             let p = f.today?.precipitationChance ?? 0
-            return DockIconContent(symbol: "umbrella.fill", mainText: "\(p)%", caption: "Lluvia hoy", style: now.style)
+            return DockIconContent(symbol: "umbrella.fill", mainText: "\(p)%", caption: L("Rain today"), style: now.style)
         }
     }
 }

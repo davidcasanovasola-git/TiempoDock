@@ -57,6 +57,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 content: ForecastView().environmentObject(store),
                 size: NSSize(width: 480, height: 740)
             )
+            // La ventana de previsión se pinta con el cielo hasta arriba, bajo la barra de título.
+            forecastWindow?.titlebarAppearsTransparent = true
+            forecastWindow?.styleMask.insert(.fullSizeContentView)
+            forecastWindow?.titleVisibility = .hidden
+            forecastWindow?.appearance = NSAppearance(named: .darkAqua)
         }
         present(forecastWindow)
     }
@@ -64,7 +69,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func showSettings() {
         if settingsWindow == nil {
             settingsWindow = makeWindow(
-                title: "Ajustes de TiempoDock",
+                title: L("TiempoDock Settings"),
                 autosave: "SettingsWindow",
                 content: SettingsView().environmentObject(store),
                 size: NSSize(width: 540, height: 600)

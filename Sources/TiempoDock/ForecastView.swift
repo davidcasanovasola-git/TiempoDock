@@ -6,7 +6,6 @@ struct ForecastView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            Divider()
             if let f = store.forecast {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
@@ -29,23 +28,35 @@ struct ForecastView: View {
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: 360)
                     HStack {
-                        Button("Reintentar") { Task { await store.refresh() } }
-                        Button("Abrir ajustes") { (NSApp.delegate as? AppDelegate)?.showSettings() }
+                        Button(L("Retry")) { Task { await store.refresh() } }
+                        Button(L("Open Settings")) { (NSApp.delegate as? AppDelegate)?.showSettings() }
                     }
                 }
                 .padding()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ProgressView("Cargando el tiempo…")
+                ProgressView(L("Loading weather…"))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .frame(minWidth: 460, minHeight: 600)
+        .background(
+            LinearGradient(colors: sky.colors, startPoint: .top, endPoint: .bottom)
+                .ignoresSafeArea()
+        )
+        .environment(\.colorScheme, .dark)
+        .foregroundStyle(.white)
+    }
+
+    /// Fondo de la ventana: el mismo cielo que el icono del Dock.
+    private var sky: SkyStyle {
+        guard let f = store.forecast else { return .clearDay }
+        return WeatherCode.info(f.current.code, isDay: f.current.isDay).style
     }
 
     private var header: some View {
         HStack(spacing: 10) {
-            Picker("Ubicación", selection: Binding(
+            Picker(L("Location"), selection: Binding(
                 get: { store.selectedLocation?.id },
                 set: { if let id = $0 { store.select(id) } }
             )) {
@@ -67,13 +78,13 @@ struct ForecastView: View {
             } label: {
                 Image(systemName: "arrow.clockwise")
             }
-            .help("Actualizar ahora")
+            .help(L("Refresh Now"))
             Button {
                 (NSApp.delegate as? AppDelegate)?.showSettings()
             } label: {
                 Image(systemName: "gearshape")
             }
-            .help("Ajustes")
+            .help(L("Settings"))
         }
         .padding(12)
     }
@@ -81,10 +92,10 @@ struct ForecastView: View {
     private var footer: some View {
         HStack {
             if let date = store.lastUpdatedSelected {
-                Text("Actualizado a las \(Format.time(date, in: .current))")
+                Text(L("Updated at %@", Format.time(date, in: .current)))
             }
             Spacer()
-            Link("Datos: Open-Meteo.com", destination: URL(string: "https://open-meteo.com")!)
+            Link(L("Data: Open-Meteo.com"), destination: URL(string: "https://open-meteo.com")!)
         }
         .font(.caption)
         .foregroundStyle(.secondary)
@@ -126,8 +137,8 @@ private struct CurrentSection: View {
                 Spacer()
                 if let today = forecast.today {
                     VStack(alignment: .trailing, spacing: 4) {
-                        Text("Máx \(Format.deg(today.max))")
-                        Text("Mín \(Format.deg(today.min))")
+                        Text(L("High %@", Format.deg(today.max)))
+                        Text(L("Low %@", Format.deg(today.min)))
                     }
                     .font(.title3)
                 }
@@ -135,8 +146,8 @@ private struct CurrentSection: View {
 
             Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 8) {
                 GridRow {
-                    Detail(icon: "thermometer.medium", title: "Sensación", value: Format.deg(c.feelsLike))
-                    Detail(icon: "humidity.fill", title: "Humedad", value: "\(Format.int(c.humidity))%")
+                    Detail(icon: "thermometer.medium", title: L("Feels like"), value: Format.deg(c.feelsLike))
+                    Detail(icon: "humidity.fill", title: L("Humidity"), value: "\(Format.int(c.humidity))%")
                 }
                 GridRow {
                     HStack(spacing: 6) {
@@ -144,15 +155,15 @@ private struct CurrentSection: View {
                             .rotationEffect(.degrees(c.windDirection + 180))
                             .foregroundStyle(.secondary)
                             .frame(width: 18)
-                        Text("Viento").foregroundStyle(.secondary)
+                        Text(L("Wind")).foregroundStyle(.secondary)
                         Text("\(Format.int(c.windSpeed)) \(forecast.windUnit.symbol) \(Format.compass(c.windDirection))")
                     }
-                    Detail(icon: "drop.fill", title: "Precipitación", value: String(format: "%.1f mm", c.precipitation))
+                    Detail(icon: "drop.fill", title: L("Precipitation"), value: Format.precipitation(c.precipitation, forecast.precipitationUnit))
                 }
                 if let today = forecast.today {
                     GridRow {
-                        Detail(icon: "sunrise.fill", title: "Amanecer", value: today.sunrise.map { Format.time($0, in: forecast.timeZone) } ?? "—")
-                        Detail(icon: "sunset.fill", title: "Atardecer", value: today.sunset.map { Format.time($0, in: forecast.timeZone) } ?? "—")
+                        Detail(icon: "sunrise.fill", title: L("Sunrise"), value: today.sunrise.map { Format.time($0, in: forecast.timeZone) } ?? "—")
+                        Detail(icon: "sunset.fill", title: L("Sunset"), value: today.sunset.map { Format.time($0, in: forecast.timeZone) } ?? "—")
                     }
                 }
             }
@@ -183,13 +194,13 @@ private struct HourlySection: View {
     let forecast: Forecast
 
     var body: some View {
-        GroupBox {
+        Card(title: L("Next 24 Hours"), icon: "clock") {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
                     ForEach(Array(forecast.upcomingHours.enumerated()), id: \.element.id) { index, hour in
                         let info = WeatherCode.info(hour.code, isDay: hour.isDay)
                         VStack(spacing: 6) {
-                            Text(index == 0 ? "Ahora" : Format.hour(hour.time, in: forecast.timeZone))
+                            Text(index == 0 ? L("Now") : Format.hour(hour.time, in: forecast.timeZone))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             Image(systemName: info.symbol)
@@ -198,7 +209,7 @@ private struct HourlySection: View {
                                 .frame(height: 28)
                             Text(rainText(hour.precipitationChance))
                                 .font(.caption2)
-                                .foregroundStyle(.blue)
+                                .foregroundStyle(Color.rainChance)
                             Text(Format.deg(hour.temperature))
                                 .font(.body.weight(.medium))
                         }
@@ -209,8 +220,6 @@ private struct HourlySection: View {
                 .padding(.vertical, 6)
                 .padding(.horizontal, 4)
             }
-        } label: {
-            Label("Próximas 24 horas", systemImage: "clock")
         }
     }
 
@@ -228,7 +237,7 @@ private struct DailySection: View {
     var body: some View {
         let lowest = forecast.days.map(\.min).min() ?? 0
         let highest = forecast.days.map(\.max).max() ?? 1
-        GroupBox {
+        Card(title: L("Next %d Days", forecast.days.count), icon: "calendar") {
             VStack(spacing: 0) {
                 ForEach(Array(forecast.days.enumerated()), id: \.element.id) { index, day in
                     let info = WeatherCode.info(day.code, isDay: true)
@@ -241,7 +250,7 @@ private struct DailySection: View {
                             .help(info.description)
                         Text(rainText(day.precipitationChance))
                             .font(.caption)
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.rainChance)
                             .frame(width: 36, alignment: .leading)
                         Text(Format.deg(day.min))
                             .foregroundStyle(.secondary)
@@ -261,8 +270,6 @@ private struct DailySection: View {
                 }
             }
             .padding(.horizontal, 4)
-        } label: {
-            Label("Próximos \(forecast.days.count) días", systemImage: "calendar")
         }
     }
 
@@ -285,7 +292,7 @@ private struct TemperatureBar: View {
             let start = (low - rangeLow) / span * geo.size.width
             let width = max((high - low) / span * geo.size.width, 6)
             ZStack(alignment: .leading) {
-                Capsule().fill(Color.secondary.opacity(0.2))
+                Capsule().fill(Color.white.opacity(0.25))
                 Capsule()
                     .fill(LinearGradient(colors: [.cyan, .yellow, .orange], startPoint: .leading, endPoint: .trailing))
                     .frame(width: width)
@@ -301,5 +308,31 @@ private struct TemperatureBar: View {
         }
         .frame(height: 8)
         .frame(minWidth: 80)
+    }
+}
+
+// MARK: - Estilo
+
+private extension Color {
+    static let rainChance = Color(red: 0.62, green: 0.86, blue: 1.0)
+}
+
+/// Tarjeta translúcida sobre el fondo de cielo.
+private struct Card<Content: View>: View {
+    let title: String
+    let icon: String
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label(title, systemImage: icon)
+                .font(.caption.weight(.semibold))
+                .textCase(.uppercase)
+                .foregroundStyle(Color.white.opacity(0.7))
+            content
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.13), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }

@@ -58,12 +58,12 @@ enum MenuBuilder {
             let now = WeatherCode.info(f.current.code, isDay: f.current.isDay)
             _ = item("\(loc.name): \(Format.deg(f.current.temperature)), \(now.description.lowercased())", symbol: now.symbol)
             if let today = f.today {
-                _ = item("Máx \(Format.deg(today.max)) · Mín \(Format.deg(today.min)) · Sensación \(Format.deg(f.current.feelsLike))", symbol: "thermometer.medium")
+                _ = item(L("High %@ · Low %@ · Feels like %@", Format.deg(today.max), Format.deg(today.min), Format.deg(f.current.feelsLike)), symbol: "thermometer.medium")
             }
-            _ = item("Viento \(Format.int(f.current.windSpeed)) \(f.windUnit.symbol) \(Format.compass(f.current.windDirection)) · Humedad \(Format.int(f.current.humidity))%", symbol: "wind")
+            _ = item(L("Wind %@ %@ %@ · Humidity %@%%", Format.int(f.current.windSpeed), f.windUnit.symbol, Format.compass(f.current.windDirection), Format.int(f.current.humidity)), symbol: "wind")
 
             menu.addItem(.separator())
-            header("Próximas horas")
+            header(L("Next Hours"))
             let hours = f.upcomingHours
             for index in stride(from: 1, to: min(hours.count, 13), by: 2) {
                 let h = hours[index]
@@ -74,7 +74,7 @@ enum MenuBuilder {
             }
 
             menu.addItem(.separator())
-            header("Próximos días")
+            header(L("Next Days"))
             for (index, d) in f.days.prefix(5).enumerated() {
                 let info = WeatherCode.info(d.code, isDay: true)
                 var title = "\(Format.dayName(d.date, index: index, in: f.timeZone))   \(Format.deg(d.max)) / \(Format.deg(d.min))"
@@ -83,12 +83,12 @@ enum MenuBuilder {
             }
             menu.addItem(.separator())
         } else {
-            header(store.errorMessage ?? "Cargando el tiempo…")
+            header(store.errorMessage ?? L("Loading weather…"))
             menu.addItem(.separator())
         }
 
         if store.locations.count > 1 {
-            let parent = NSMenuItem(title: "Ubicación", action: nil, keyEquivalent: "")
+            let parent = NSMenuItem(title: L("Location"), action: nil, keyEquivalent: "")
             let sub = NSMenu()
             for loc in store.locations {
                 let i = NSMenuItem(title: loc.name, action: #selector(MenuActions.selectLocation(_:)), keyEquivalent: "")
@@ -101,13 +101,13 @@ enum MenuBuilder {
             menu.addItem(parent)
         }
 
-        _ = item("Actualizar ahora", symbol: "arrow.clockwise", action: #selector(MenuActions.refresh))
-        _ = item("Abrir previsión…", symbol: "calendar", action: #selector(MenuActions.openForecast))
-        _ = item("Ajustes…", symbol: "gearshape", action: #selector(MenuActions.openSettings))
+        _ = item(L("Refresh Now"), symbol: "arrow.clockwise", action: #selector(MenuActions.refresh))
+        _ = item(L("Open Forecast…"), symbol: "calendar", action: #selector(MenuActions.openForecast))
+        _ = item(L("Settings…"), symbol: "gearshape", action: #selector(MenuActions.openSettings))
 
         if forStatusBar {
             menu.addItem(.separator())
-            _ = item("Salir de TiempoDock", action: #selector(MenuActions.quit))
+            _ = item(L("Quit TiempoDock"), action: #selector(MenuActions.quit))
         }
         return menu
     }
@@ -118,52 +118,52 @@ enum MenuBuilder {
 
         let appItem = NSMenuItem()
         let appMenu = NSMenu()
-        appMenu.addItem(withTitle: "Acerca de TiempoDock", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
-        let updates = NSMenuItem(title: "Buscar actualizaciones…", action: #selector(MenuActions.checkForUpdates), keyEquivalent: "")
+        appMenu.addItem(withTitle: L("About TiempoDock"), action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        let updates = NSMenuItem(title: L("Check for Updates…"), action: #selector(MenuActions.checkForUpdates), keyEquivalent: "")
         updates.target = MenuActions.shared
         appMenu.addItem(updates)
         appMenu.addItem(.separator())
-        let settings = NSMenuItem(title: "Ajustes…", action: #selector(MenuActions.openSettings), keyEquivalent: ",")
+        let settings = NSMenuItem(title: L("Settings…"), action: #selector(MenuActions.openSettings), keyEquivalent: ",")
         settings.target = MenuActions.shared
         appMenu.addItem(settings)
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: "Ocultar TiempoDock", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
-        let hideOthers = appMenu.addItem(withTitle: "Ocultar otros", action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")
+        appMenu.addItem(withTitle: L("Hide TiempoDock"), action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        let hideOthers = appMenu.addItem(withTitle: L("Hide Others"), action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")
         hideOthers.keyEquivalentModifierMask = [.command, .option]
-        appMenu.addItem(withTitle: "Mostrar todo", action: #selector(NSApplication.unhideAllApplications(_:)), keyEquivalent: "")
+        appMenu.addItem(withTitle: L("Show All"), action: #selector(NSApplication.unhideAllApplications(_:)), keyEquivalent: "")
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: "Salir de TiempoDock", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appMenu.addItem(withTitle: L("Quit TiempoDock"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appItem.submenu = appMenu
         main.addItem(appItem)
 
         let editItem = NSMenuItem()
-        let editMenu = NSMenu(title: "Edición")
-        editMenu.addItem(withTitle: "Deshacer", action: Selector(("undo:")), keyEquivalent: "z")
-        let redo = editMenu.addItem(withTitle: "Rehacer", action: Selector(("redo:")), keyEquivalent: "z")
+        let editMenu = NSMenu(title: L("Edit"))
+        editMenu.addItem(withTitle: L("Undo"), action: Selector(("undo:")), keyEquivalent: "z")
+        let redo = editMenu.addItem(withTitle: L("Redo"), action: Selector(("redo:")), keyEquivalent: "z")
         redo.keyEquivalentModifierMask = [.command, .shift]
         editMenu.addItem(.separator())
-        editMenu.addItem(withTitle: "Cortar", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
-        editMenu.addItem(withTitle: "Copiar", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
-        editMenu.addItem(withTitle: "Pegar", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
-        editMenu.addItem(withTitle: "Seleccionar todo", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        editMenu.addItem(withTitle: L("Cut"), action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        editMenu.addItem(withTitle: L("Copy"), action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        editMenu.addItem(withTitle: L("Paste"), action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        editMenu.addItem(withTitle: L("Select All"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
         editItem.submenu = editMenu
         main.addItem(editItem)
 
         let weatherItem = NSMenuItem()
-        let weatherMenu = NSMenu(title: "Tiempo")
-        let refresh = NSMenuItem(title: "Actualizar ahora", action: #selector(MenuActions.refresh), keyEquivalent: "r")
+        let weatherMenu = NSMenu(title: L("Weather"))
+        let refresh = NSMenuItem(title: L("Refresh Now"), action: #selector(MenuActions.refresh), keyEquivalent: "r")
         refresh.target = MenuActions.shared
         weatherMenu.addItem(refresh)
-        let open = NSMenuItem(title: "Abrir previsión", action: #selector(MenuActions.openForecast), keyEquivalent: "1")
+        let open = NSMenuItem(title: L("Open Forecast"), action: #selector(MenuActions.openForecast), keyEquivalent: "1")
         open.target = MenuActions.shared
         weatherMenu.addItem(open)
         weatherItem.submenu = weatherMenu
         main.addItem(weatherItem)
 
         let windowItem = NSMenuItem()
-        let windowMenu = NSMenu(title: "Ventana")
-        windowMenu.addItem(withTitle: "Cerrar", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
-        windowMenu.addItem(withTitle: "Minimizar", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
+        let windowMenu = NSMenu(title: L("Window"))
+        windowMenu.addItem(withTitle: L("Close"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        windowMenu.addItem(withTitle: L("Minimize"), action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
         windowItem.submenu = windowMenu
         main.addItem(windowItem)
         NSApp.windowsMenu = windowMenu

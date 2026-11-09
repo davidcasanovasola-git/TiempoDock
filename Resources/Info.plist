@@ -3,7 +3,16 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>es</string>
+	<string>en</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>es</string>
+		<string>ca</string>
+		<string>fr</string>
+		<string>de</string>
+		<string>pt</string>
+	</array>
 	<key>CFBundleExecutable</key>
 	<string>TiempoDock</string>
 	<key>CFBundleIconFile</key>
@@ -29,10 +38,10 @@
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
-	<string>Código abierto (MIT). Datos: Open-Meteo.com</string>
+	<string>Open source (MIT). Weather data: Open-Meteo.com</string>
 	<key>NSLocationUsageDescription</key>
-	<string>TiempoDock usa tu ubicación aproximada para mostrar el tiempo de donde estás.</string>
+	<string>TiempoDock uses your approximate location to show the weather where you are.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>TiempoDock usa tu ubicación aproximada para mostrar el tiempo de donde estás.</string>
+	<string>TiempoDock uses your approximate location to show the weather where you are.</string>
 </dict>
 </plist>

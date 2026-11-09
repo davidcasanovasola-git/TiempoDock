@@ -22,6 +22,7 @@ rm -rf build
 mkdir -p "$OUT/Contents/MacOS" "$OUT/Contents/Resources"
 lipo -create "${BINS[@]}" -output "$OUT/Contents/MacOS/$APP_NAME"
 cp Resources/Info.plist "$OUT/Contents/Info.plist"
+cp -R Resources/Localization/*.lproj "$OUT/Contents/Resources/"
 mkdir -p "$OUT/Contents/Library/LaunchAgents"
 cp Resources/io.github.tiempodock.agent.plist "$OUT/Contents/Library/LaunchAgents/"
 
