@@ -13,7 +13,7 @@ if pgrep -x TiempoDock >/dev/null; then
     pkill -x TiempoDock || true
 fi
 
-echo "→ Instalando en $DEST…"
+echo "→ Instalando en ${DEST}…"
 rm -rf "$DEST"
 cp -R build/TiempoDock.app "$DEST"
 

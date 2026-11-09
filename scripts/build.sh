@@ -10,7 +10,7 @@ echo "→ Compilando…"
 swift build -c release
 BIN="$(swift build -c release --show-bin-path)/$APP_NAME"
 
-echo "→ Montando $OUT…"
+echo "→ Montando ${OUT}…"
 rm -rf build
 mkdir -p "$OUT/Contents/MacOS" "$OUT/Contents/Resources"
 cp "$BIN" "$OUT/Contents/MacOS/$APP_NAME"
